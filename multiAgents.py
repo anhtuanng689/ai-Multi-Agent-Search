@@ -328,7 +328,6 @@ deled as choosing uniformly at random from their
         maxval = float("-inf")
         maxvalaction = None
         for a in gameState.getLegalActions(self.index):
-            # print(gameState, a)
             val = value(gameState.generateSuccessor(0, a), a, 0, self.index + 1)
             if val >= maxval:
                 maxval = val
