@@ -74,8 +74,19 @@ class ReflexAgent(Agent):
         newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates]
 
         "*** YOUR CODE HERE ***"
-        return successorGameState.getScore()
+        # Tap trung an thuc an khi khong co ma o gan
+        newFood = successorGameState.getFood().asList()
+        minFood = float("inf")
+        for food in newFood:
+            minFood = min(minFood, manhattanDistance(newPos, food))
 
+        # Tranh xa ma neu khoang cach voi chung qua gan
+        for ghost in successorGameState.getGhostPositions():
+            if (manhattanDistance(newPos, ghost) == 1):
+                return -float('inf')
+        # Tra ve thuc an gan nhat
+        return successorGameState.getScore() + 1.0/minFood
+        
 def scoreEvaluationFunction(currentGameState):
     """
       This default evaluation function just returns the score of the state.
@@ -129,7 +140,56 @@ class MinimaxAgent(MultiAgentSearchAgent):
             Returns the total number of agents in the game
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        actions = [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST, Directions.STOP]
+        numagents = gameState.getNumAgents()
+        # Kiem soat luot di chuyen va do sau
+        def value(state, action, depth, index):
+
+            if index % numagents == 0:
+                depth += 1
+
+            if state.isWin() or state.isLose():
+                return self.evaluationFunction(state)
+
+            if depth == self.depth:
+                return self.evaluationFunction(state)
+
+            if not index:
+
+                return maximizer(state, depth, index)
+            return minimizer(state, depth, index)
+
+        # Diem so lon nhat trong cac successor
+        def maximizer(state, depth, index):
+
+            v = float("-inf")
+
+            acts = state.getLegalActions(index)
+
+            thissuccs = [(state.generateSuccessor(index, a), a) for a in acts]
+            for succ in thissuccs:
+                v = max(v, value(succ[0], succ[1], depth, ((index + 1) % numagents)))
+            return v
+
+        # Diem so nho nhat trong cac successor
+        def minimizer(state, depth, index):
+            v = float("inf")
+
+            acts = state.getLegalActions(index)
+            thissuccs = [(state.generateSuccessor(index, a), a) for a in acts]
+            for succ in thissuccs:
+                v = min(v, value(succ[0], succ[1], depth, ((index + 1) % numagents)))
+            return v
+
+
+        maxval = float("-inf")
+        maxvalaction = None
+        for a in gameState.getLegalActions(self.index):
+            val = value(gameState.generateSuccessor(0, a), a, 0, self.index + 1)
+            if val > maxval:
+                maxval = val
+                maxvalaction = a
+        return maxvalaction
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """
@@ -141,8 +201,72 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
           Returns the minimax action using self.depth and self.evaluationFunction
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        actions = [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST, Directions.STOP]
+        numagents = gameState.getNumAgents()
 
+        def value(state, action, depth, index, alpha, beta):
+
+            if index % numagents == 0:
+                depth += 1
+
+            if state.isWin() or state.isLose():
+                return self.evaluationFunction(state), alpha, beta
+
+            if depth == self.depth:
+                return self.evaluationFunction(state), alpha, beta
+
+            if not index:
+
+                return maximizer(state, depth, index, alpha, beta), alpha, beta
+            return minimizer(state, depth, index, alpha, beta), alpha, beta
+
+        # Pruning
+        def maximizer(state, depth, index, alpha, beta):
+            v = float("-inf")
+
+            acts = state.getLegalActions(index)
+
+            for act in acts:
+                thissucc = (state.generateSuccessor(index, act), act)
+                val, alpha, beta = value(thissucc[0], thissucc[1], depth, ((index + 1) % numagents), alpha, beta)
+                v = max(v, val)
+                if v > beta:
+                    return v
+                else:
+                    alpha = max(alpha, v)
+            return v
+
+        # Pruning
+        def minimizer(state, depth, index, alpha, beta):
+            v = float("inf")
+
+            acts = state.getLegalActions(index)
+            for act in acts:
+                thissucc = (state.generateSuccessor(index, act), act)
+                val, alpha, beta = value(thissucc[0], thissucc[1], depth, ((index + 1) % numagents), alpha, beta)
+                v = min(v, val)
+                if v < alpha:
+                    return v
+                else:
+                    beta = min(beta, v)
+            return v
+
+
+        maxval = float("-inf")
+        maxvalaction = None
+        alpha = float("-inf")
+        beta = float("inf")
+        for a in gameState.getLegalActions(self.index):
+            val, alpha, beta = value(gameState.generateSuccessor(0, a), a, 0, (self.index + 1), alpha, beta)
+            if val > maxval:
+                maxval = val
+                maxvalaction = a
+                alpha = val
+        return maxvalaction
+
+        "*** YOUR CODE HERE ***"
+        util.raiseNotDefined()
+        
 class ExpectimaxAgent(MultiAgentSearchAgent):
     """
       Your expectimax agent (question 4)
@@ -152,10 +276,64 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         """
           Returns the expectimax action using self.depth and self.evaluationFunction
 
-          All ghosts should be modeled as choosing uniformly at random from their
+          All ghosts should be mopython pacman.py -p MinimaxAgent -l minimaxClassic -a depth = 4
+deled as choosing uniformly at random from their
           legal moves.
         """
         "*** YOUR CODE HERE ***"
+        actions = [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST, Directions.STOP]
+        numagents = gameState.getNumAgents()
+
+        def value(state, action, depth, index):
+
+            if index % numagents == 0:
+                depth += 1
+
+            if state.isWin() or state.isLose():
+                return self.evaluationFunction(state)
+
+            if depth == self.depth:
+                return self.evaluationFunction(state)
+
+            if not index:
+                return maximizer(state, depth, index)
+            return minimizer(state, depth, index)
+
+
+        def maximizer(state, depth, index):
+
+            v = float("-inf")
+
+            acts = state.getLegalActions(index)
+
+            thissuccs = [(state.generateSuccessor(index, a), a) for a in acts]
+            for succ in thissuccs:
+                v = max(v, value(succ[0], succ[1], depth, ((index + 1) % numagents)))
+            return v
+
+
+        def minimizer(state, depth, index):
+            v = float("inf")
+            totalv = 0
+
+            acts = state.getLegalActions(index)
+            thissuccs = [(state.generateSuccessor(index, a), a) for a in acts]
+            for succ in thissuccs:
+                v = value(succ[0], succ[1], depth, ((index + 1) % numagents))
+                totalv += v
+            # Tra ve trung binh tong cac successor
+            return totalv / len(thissuccs)
+
+
+        maxval = float("-inf")
+        maxvalaction = None
+        for a in gameState.getLegalActions(self.index):
+            # print(gameState, a)
+            val = value(gameState.generateSuccessor(0, a), a, 0, self.index + 1)
+            if val >= maxval:
+                maxval = val
+                maxvalaction = a
+        return maxvalaction
         util.raiseNotDefined()
 
 def betterEvaluationFunction(currentGameState):
@@ -166,6 +344,37 @@ def betterEvaluationFunction(currentGameState):
       DESCRIPTION: <write something here so we know what you did>
     """
     "*** YOUR CODE HERE ***"
+    # Ham duoc tinh bang khoang cach thuc an gan nhat, so luong thuc an con lai, vien suc manh con lai va khoang cach toi con ma
+    newPos = currentGameState.getPacmanPosition()
+    newFood = currentGameState.getFood().asList()
+
+    minFoodist = float('inf')
+    for food in newFood:
+        minFoodist = min(minFoodist, manhattanDistance(newPos, food))
+
+    ghostDist = 0
+    for ghost in currentGameState.getGhostPositions():
+        ghostDist = manhattanDistance(newPos, ghost)
+        if (ghostDist < 2):
+            return -float('inf')
+
+    foodLeft = currentGameState.getNumFood()
+    capsLeft = len(currentGameState.getCapsules())
+
+    foodLeftMultiplier = 950050
+    capsLeftMultiplier = 10000
+    foodDistMultiplier = 950
+
+    additionalFactors = 0
+    if currentGameState.isLose():
+        additionalFactors -= 50000
+    elif currentGameState.isWin():
+        additionalFactors += 50000
+
+    return 1.0/(foodLeft + 1) * foodLeftMultiplier + ghostDist + \
+           1.0/(minFoodist + 1) * foodDistMultiplier + \
+           1.0/(capsLeft + 1) * capsLeftMultiplier + additionalFactors
+
     util.raiseNotDefined()
 
 # Abbreviation
